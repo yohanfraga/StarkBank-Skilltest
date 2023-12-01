@@ -13,34 +13,69 @@ MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE4BWFXyO0+3mMw7k8rGIEAHJdDE49AOH1
 28tSGLjwzahfysrCyryZouQexbY9XwZBYMiwuROY1QG6c0Gdc2oX+Q==
 -----END PUBLIC KEY-----"""
 
+#gets the project
 project = starkbank.Project(
     environment="sandbox",
     id="6255775102009344",
     private_key=privateKey
 )
-starkbank.user = project 
+#gets the user
+starkbank.user = project
 
+#function to get a random recipient for the invoice
 def get_random_recipient():
     name = ["Michael Scott", "Dwight Schrute", "Jim Halpert", "Pam Beesly", "Ryan Howard", "Andy Bernard", "Robert California", "Stanley Hudson", "Kevin Malone", "Oscar Martinez", "Angela Martin", "Meredith Palmer", "Nate Nickerson"]
-    return name[random.randint(0, 12)]
+    person = name[random.randint(0, 12)]
+    if person == "Michael Scott": #associates a name with a cpf
+        cpf = "144.092.710-32"
+    elif person == "Dwight Schrute":
+        cpf = "958.165.000-82"
+    elif person == "Jim Halpert":
+        cpf = "394.502.690-33"
+    elif person == "Pam Beesly":
+        cpf = "218.662.460-54"
+    elif person == "Ryan Howard":
+        cpf = "879.607.440-09"
+    elif person == "Andy Bernard":
+        cpf = "136.820.820-77"
+    elif person == "Ryan Howard":
+        cpf = "442.983.400-82"
+    elif person == "Robert California":
+        cpf = "661.670.020-88"
+    elif person == "Stanley Hudson":
+        cpf = "577.742.300-09"
+    elif person == "Kevin Malone":
+        cpf = "161.734.150-97"
+    elif person == "Oscar Martinez":
+        cpf = "981.175.060-25"
+    elif person == "Angela Martin":
+        cpf = "037.661.920-19"
+    elif person == "Meredith Palmer":
+        cpf = "771.574.750-57"
+    elif person == "Nate Nickerson":
+        cpf = "249.750.140-84"
+    return person, cpf
 
+#function to generate 8 to 12 invoices
 def issue_invoices():
     for _ in range(random.randint(8, 12)):
+        person, cpf = get_random_recipient()
         invoice = starkbank.invoice.create([
             starkbank.Invoice(
                 amount=random.randint(100, 99999),  
-                name=get_random_recipient(),
-                tax_id="012.345.678-90",
+                name= person,
+                tax_id= cpf,
                 tags=["scheduled"]
             )
         ])
         print("Issued invoice.")
 
+#function to generate the transfer
 def create_transfer():
-    webhook = starkbank.webhook.get("5865667358097408")
-    events = starkbank.event.query()
+    webhook = starkbank.webhook.get("5122370788392960") #get the webhook
+    events = starkbank.event.query() #get the envents
     for event in events:
-        if event.subscription == "invoice" and event.log.invoice.status == "paid" and event.log.invoice.transaction_ids != []:
+        if event.subscription == "invoice" and event.log.invoice.status == "paid" and event.log.invoice.transaction_ids != []: #sort for the paid invoice event
             transfer=starkbank.transfer.create([
                 starkbank.Transfer(
                     amount=event.log.invoice.amount - event.log.invoice.fee,
@@ -52,17 +87,18 @@ def create_transfer():
                     name="Stark Bank S.A.",
                 )
             ])
-            print("Tranfer made sucefully.")
+            print("Transfer made sucefully.")
             starkbank.event.delete(event.id)
 
+#simulation function
 def simulacao():
-    hora_inicio = time.time()
+    hora_inicio = time.time() #set the time
     hora_invoice = time.time()
-    issue_invoices()
-    while (time.time() - hora_inicio < 24 * 60 * 60) :
-        if time.time() - hora_invoice >= 3 * 60 * 60:   
+    issue_invoices() #create the first invoices
+    while (time.time() - hora_inicio < 24 * 60 * 60) :  #only run the simulation for 24 hours 
+        if time.time() - hora_invoice >= 3 * 60 * 60:   #check if 3 hours have passed since the last creation of invoices
             issue_invoices()
             hora_invoice = time.time()
-        create_transfer()
+        create_transfer() #create transfers if the invoices has been paid
         
-simulacao()
+simulacao() #start the simulation
