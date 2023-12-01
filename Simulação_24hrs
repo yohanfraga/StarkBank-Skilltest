@@ -1,0 +1,68 @@
+import starkbank
+import random
+import time
+
+privateKey = """-----BEGIN EC PRIVATE KEY-----
+MHQCAQEEIJ4EY6gzcbakEYhDM0D2QJNBt4F1agDq4TcAELsoGPVHoAcGBSuBBAAK
+oUQDQgAE4BWFXyO0+3mMw7k8rGIEAHJdDE49AOH128tSGLjwzahfysrCyryZouQe
+xbY9XwZBYMiwuROY1QG6c0Gdc2oX+Q==
+-----END EC PRIVATE KEY-----"""
+
+publicKey = """-----BEGIN PUBLIC KEY-----
+MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE4BWFXyO0+3mMw7k8rGIEAHJdDE49AOH1
+28tSGLjwzahfysrCyryZouQexbY9XwZBYMiwuROY1QG6c0Gdc2oX+Q==
+-----END PUBLIC KEY-----"""
+
+project = starkbank.Project(
+    environment="sandbox",
+    id="6255775102009344",
+    private_key=privateKey
+)
+starkbank.user = project 
+
+def get_random_recipient():
+    name = ["Michael Scott", "Dwight Schrute", "Jim Halpert", "Pam Beesly", "Ryan Howard", "Andy Bernard", "Robert California", "Stanley Hudson", "Kevin Malone", "Oscar Martinez", "Angela Martin", "Meredith Palmer", "Nate Nickerson"]
+    return name[random.randint(0, 12)]
+
+def issue_invoices():
+    for _ in range(random.randint(8, 12)):
+        invoice = starkbank.invoice.create([
+            starkbank.Invoice(
+                amount=random.randint(100, 99999),  
+                name=get_random_recipient(),
+                tax_id="012.345.678-90",
+                tags=["scheduled"]
+            )
+        ])
+        print("Issued invoice.")
+
+def create_transfer():
+    webhook = starkbank.webhook.get("5865667358097408")
+    events = starkbank.event.query()
+    for event in events:
+        if event.subscription == "invoice" and event.log.invoice.status == "paid" and event.log.invoice.transaction_ids != []:
+            transfer=starkbank.transfer.create([
+                starkbank.Transfer(
+                    amount=event.log.invoice.amount - event.log.invoice.fee,
+                    bank_code="20018183",  
+                    branch_code="0001",
+                    account_number="6341320293482496",
+                    account_type="payment",
+                    tax_id="20.018.183/0001-80",
+                    name="Stark Bank S.A.",
+                )
+            ])
+            print("Tranfer made sucefully.")
+            starkbank.event.delete(event.id)
+
+def simulacao():
+    hora_inicio = time.time()
+    hora_invoice = time.time()
+    issue_invoices()
+    while (time.time() - hora_inicio < 24 * 60 * 60) :
+        if time.time() - hora_invoice >= 3 * 60 * 60:   
+            issue_invoices()
+            hora_invoice = time.time()
+        create_transfer()
+        
+simulacao()
