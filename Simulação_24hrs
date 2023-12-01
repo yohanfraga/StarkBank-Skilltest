@@ -68,7 +68,6 @@ def issue_invoices():
                 tags=["scheduled"]
             )
         ])
-        print("Issued invoice.")
 
 #function to generate the transfer
 def create_transfer():
@@ -87,7 +86,6 @@ def create_transfer():
                     name="Stark Bank S.A.",
                 )
             ])
-            print("Transfer made sucefully.")
             starkbank.event.delete(event.id)
 
 #simulation function
